@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0f1117" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <title>FitTrack</title>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="style.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="app">
+      <header class="header">
+        <div class="header-left">
+          <span class="logo">FIT<span class="accent">TRACK</span></span>
+          <span class="date-label" id="date-label"></span>
+        </div>
+        <div class="header-right">
+          <span class="streak" id="streak-label">🔥 0j</span>
+        </div>
+      </header>
+
+      <nav class="nav">
+        <button class="nav-btn active" data-tab="nutrition">Nutrition</button>
+        <button class="nav-btn" data-tab="workout">Entraînement</button>
+        <button class="nav-btn" data-tab="historique">Historique</button>
+        <button class="nav-btn" data-tab="profil">Profil</button>
+      </nav>
+
+      <main class="main">
+        <!-- NUTRITION -->
+        <section id="tab-nutrition" class="tab active">
+          <div class="macro-grid">
+            <div class="macro-card main-cal">
+              <div>
+                <div class="macro-label">Calories</div>
+                <div class="macro-value" id="cal-val">0</div>
+                <div class="macro-goal" id="cal-goal">/ — kcal</div>
+              </div>
+              <div class="ring-wrap">
+                <canvas id="cal-ring" width="80" height="80"></canvas>
+              </div>
+            </div>
+            <div class="macro-card">
+              <div class="macro-label">Protéines</div>
+              <div class="macro-value" id="prot-val">
+                0<span class="unit">g</span>
+              </div>
+              <div class="macro-goal" id="prot-goal">/ — g</div>
+            </div>
+            <div class="macro-card">
+              <div class="macro-label">Glucides</div>
+              <div class="macro-value" id="carb-val">
+                0<span class="unit">g</span>
+              </div>
+              <div class="macro-goal">suivi</div>
+            </div>
+            <div class="macro-card">
+              <div class="macro-label">Lipides</div>
+              <div class="macro-value" id="fat-val">
+                0<span class="unit">g</span>
+              </div>
+              <div class="macro-goal">suivi</div>
+            </div>
+          </div>
+
+          <div class="section-block">
+            <div class="block-title">Ajouter un aliment</div>
+            <div class="food-form">
+              <div class="search-wrap">
+                <input
+                  type="text"
+                  id="f-search"
+                  placeholder="Rechercher un aliment..."
+                  class="input-full"
+                  oninput="searchFood()"
+                />
+                <div id="search-results" class="search-results"></div>
+              </div>
+              <div
+                id="selected-food"
+                class="selected-food"
+                style="display: none"
+              >
+                <div class="selected-name" id="selected-name"></div>
+                <div class="selected-macros" id="selected-macros"></div>
+                <div class="weight-row">
+                  <input
+                    type="number"
+                    id="f-grams"
+                    placeholder="Quantité (g)"
+                    min="1"
+                    oninput="updatePreview()"
+                  />
+                  <button class="btn-add" onclick="confirmFood()">
+                    + Ajouter
+                  </button>
+                </div>
+                <div class="macro-preview" id="macro-preview"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-block">
+            <div class="block-title">Repas du jour</div>
+            <div id="food-list" class="food-list">
+              <p class="empty">Aucun aliment pour le moment.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- WORKOUT -->
+        <section id="tab-workout" class="tab">
+          <div class="week-strip" id="week-strip"></div>
+
+          <div class="section-block">
+            <div class="block-title">Marquer une séance</div>
+            <div class="session-btns">
+              <button class="btn-session" onclick="logSession('A')">
+                Séance A<span>Haut du corps</span>
+              </button>
+              <button class="btn-session" onclick="logSession('B')">
+                Séance B<span>Bas du corps</span>
+              </button>
+              <button class="btn-session" onclick="logSession('C')">
+                Séance C<span>Full body</span>
+              </button>
+            </div>
+            <p id="session-msg" class="session-msg"></p>
+          </div>
+
+          <div class="section-block">
+            <div class="block-title">Programme — poids du corps</div>
+            <div class="program-tabs">
+              <button class="ptab active" onclick="showProgram('A', this)">
+                Séance A
+              </button>
+              <button class="ptab" onclick="showProgram('B', this)">
+                Séance B
+              </button>
+              <button class="ptab" onclick="showProgram('C', this)">
+                Séance C
+              </button>
+            </div>
+            <div id="program-list"></div>
+          </div>
+        </section>
+
+        <!-- HISTORIQUE -->
+        <section id="tab-historique" class="tab">
+          <div class="section-block">
+            <div class="block-title">Poids — évolution</div>
+            <div class="weight-form">
+              <input
+                type="number"
+                id="w-input"
+                placeholder="Poids aujourd'hui (kg)"
+                step="0.1"
+              />
+              <button class="btn-add" onclick="logWeight()">Enregistrer</button>
+            </div>
+            <canvas
+              id="weight-chart"
+              height="180"
+              style="margin-top: 1rem; width: 100%"
+            ></canvas>
+          </div>
+          <div class="section-block">
+            <div class="block-title">Séances effectuées</div>
+            <div id="session-history" class="food-list">
+              <p class="empty">Aucune séance enregistrée.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- PROFIL -->
+        <section id="tab-profil" class="tab">
+          <div class="section-block">
+            <div class="block-title">Mon profil</div>
+            <div class="profil-form">
+              <label
+                >Poids (kg)<input
+                  type="number"
+                  id="p-poids"
+                  placeholder="83"
+                  step="0.1"
+              /></label>
+              <label
+                >Taille (cm)<input
+                  type="number"
+                  id="p-taille"
+                  placeholder="183"
+              /></label>
+              <label
+                >Âge<input type="number" id="p-age" placeholder="25"
+              /></label>
+              <label
+                >Objectif kcal/j<input
+                  type="number"
+                  id="p-cal"
+                  placeholder="1925"
+              /></label>
+              <label
+                >Objectif protéines (g/j)<input
+                  type="number"
+                  id="p-prot"
+                  placeholder="150"
+              /></label>
+            </div>
+            <button class="btn-add" onclick="saveProfil()">Enregistrer</button>
+            <p id="profil-msg" class="session-msg"></p>
+          </div>
+
+          <div class="section-block" id="calc-block" style="display: none">
+            <div class="block-title">Calcul automatique</div>
+            <div id="calc-content" class="calc-grid"></div>
+          </div>
+
+          <div class="section-block danger-zone">
+            <div class="block-title">Zone danger</div>
+            <button class="btn-danger" onclick="resetDay()">
+              Réinitialiser le jour
+            </button>
+            <button class="btn-danger" onclick="resetAll()">
+              Tout effacer
+            </button>
+          </div>
+        </section>
+      </main>
+    </div>
+    <script src="app.js"></script>
+  </body>
+</html>
