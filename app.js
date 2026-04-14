@@ -100,17 +100,28 @@ function updateNutrition() {
   document.getElementById("prot-goal").textContent = p.prot
     ? "/ " + p.prot + " g"
     : "/ — g";
-  drawRing(totCal, p.cal || 0);
+  document.getElementById("carb-goal").textContent = p.carb
+    ? "/ " + p.carb + " g"
+    : "/ — g";
+  document.getElementById("fat-goal").textContent = p.fat
+    ? "/ " + p.fat + " g"
+    : "/ — g";
+  drawRing(totCal, p.cal || 0, "cal-ring", "#b8ff4f");
+  drawRing(totProt, p.prot || 0, "prot-ring", "#4fffb0");
+  drawRing(totCarb, p.carb || 0, "carb-ring", "#4fb8ff");
+  drawRing(totFat, p.fat || 0, "fat-ring", "#ffb84f");
 }
 
-function drawRing(val, goal) {
-  const canvas = document.getElementById("cal-ring");
+function drawRing(val, goal, canvasId, color) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
   const ctx = canvas.getContext("2d");
-  const cx = 40,
-    cy = 40,
-    r = 32,
-    lw = 7;
-  ctx.clearRect(0, 0, 80, 80);
+  const size = canvas.width;
+  const cx = size / 2,
+    cy = size / 2,
+    r = size / 2 - 4,
+    lw = size > 50 ? 7 : 4;
+  ctx.clearRect(0, 0, size, size);
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0, Math.PI * 2);
   ctx.strokeStyle = "rgba(255,255,255,0.07)";
@@ -118,19 +129,20 @@ function drawRing(val, goal) {
   ctx.stroke();
   if (goal > 0) {
     const pct = Math.min(val / goal, 1.05);
-    const color = pct > 1 ? "#ff4f4f" : "#b8ff4f";
     ctx.beginPath();
     ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * pct);
-    ctx.strokeStyle = color;
+    ctx.strokeStyle = pct > 1 ? "#ff4f4f" : color;
     ctx.lineWidth = lw;
     ctx.lineCap = "round";
     ctx.stroke();
   }
-  ctx.fillStyle = "#b8ff4f";
-  ctx.font = "bold 13px Syne, sans-serif";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(goal > 0 ? Math.round((val / goal) * 100) + "%" : "—", cx, cy);
+  if (size > 50) {
+    ctx.fillStyle = color;
+    ctx.font = "bold 13px Syne, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(goal > 0 ? Math.round((val / goal) * 100) + "%" : "—", cx, cy);
+  }
 }
 
 function renderFoods() {
@@ -264,6 +276,66 @@ window.removeFood = function (i) {
   renderFoods();
   updateNutrition();
 };
+// FAVORIS
+function renderFavorites() {
+  const el = document.getElementById("favorites-list");
+  const favs = load("favorites", []);
+  if (!favs.length) {
+    el.innerHTML = '<p class="empty">Aucun favori enregistré.</p>';
+    return;
+  }
+  el.innerHTML = favs
+    .map(
+      (f, i) => `
+    <div class="fav-item">
+      <div>
+        <div class="fav-name">${f.name}</div>
+        <div class="fav-macros">${f.totalCal} kcal · P:${f.totalProt}g · G:${f.totalCarb}g · L:${f.totalFat}g</div>
+      </div>
+      <div class="fav-actions">
+        <button class="btn-fav-add" onclick="loadFavorite(${i})">+ Ajouter</button>
+        <button class="btn-fav-del" onclick="deleteFavorite(${i})">×</button>
+      </div>
+    </div>
+  `,
+    )
+    .join("");
+}
+
+window.saveFavorite = function () {
+  if (!state.foods.length) return;
+  const name =
+    document.getElementById("fav-name").value.trim() ||
+    "Repas du " + getToday();
+  const favs = load("favorites", []);
+  favs.push({
+    name,
+    foods: [...state.foods],
+    totalCal: state.foods.reduce((s, f) => s + f.cal, 0),
+    totalProt: state.foods.reduce((s, f) => s + f.prot, 0),
+    totalCarb: state.foods.reduce((s, f) => s + f.carb, 0),
+    totalFat: state.foods.reduce((s, f) => s + f.fat, 0),
+  });
+  save("favorites", favs);
+  document.getElementById("fav-name").value = "";
+  renderFavorites();
+};
+
+window.loadFavorite = function (i) {
+  const favs = load("favorites", []);
+  const fav = favs[i];
+  fav.foods.forEach((f) => state.foods.push(f));
+  save("foods_" + getToday(), state.foods);
+  renderFoods();
+  updateNutrition();
+};
+
+window.deleteFavorite = function (i) {
+  const favs = load("favorites", []);
+  favs.splice(i, 1);
+  save("favorites", favs);
+  renderFavorites();
+};
 
 // WORKOUT
 function renderWeekStrip() {
@@ -326,6 +398,29 @@ window.toggleCheck = function (s, i) {
   state.checks[s][i] = !state.checks[s][i];
   save("checks_" + getToday(), state.checks);
   renderProgram();
+};
+
+// EAU
+function updateWater() {
+  const ml = load("water_" + getToday(), 0);
+  const goal = state.profil.water || 2000;
+  const l = (ml / 1000).toFixed(1);
+  const goalL = (goal / 1000).toFixed(1);
+  document.getElementById("water-val").textContent = l + " L";
+  document.getElementById("water-goal").textContent = "/ " + goalL + " L";
+  document.getElementById("water-bar").style.width =
+    Math.min((ml / goal) * 100, 100) + "%";
+}
+
+window.addWater = function (ml) {
+  const current = load("water_" + getToday(), 0);
+  save("water_" + getToday(), current + ml);
+  updateWater();
+};
+
+window.resetWater = function () {
+  save("water_" + getToday(), 0);
+  updateWater();
 };
 
 // HISTORIQUE
@@ -449,13 +544,26 @@ window.saveProfil = function () {
     const bmr = Math.round(10 * p.poids + 6.25 * p.taille - 5 * p.age + 5);
     const tdee = Math.round(bmr * 1.2);
     const deficit = tdee - 350;
+    const protAuto = Math.round(p.poids * 2);
+    const carbAuto = Math.round((deficit * 0.4) / 4);
+    const fatAuto = Math.round((deficit * 0.3) / 9);
+
+    state.profil.prot = protAuto;
+    state.profil.carb = carbAuto;
+    state.profil.fat = fatAuto;
+    if (!state.profil.cal) state.profil.cal = deficit;
+    save("profil", state.profil);
+
     document.getElementById("calc-block").style.display = "block";
     document.getElementById("calc-content").innerHTML = `
-      <div class="calc-row"><span>BMR</span><span class="cv">${bmr} kcal</span></div>
-      <div class="calc-row"><span>TDEE sédentaire</span><span class="cv">${tdee} kcal</span></div>
-      <div class="calc-row"><span>Objectif suggéré (−350)</span><span class="cv">${deficit} kcal</span></div>
-      <div class="calc-row"><span>Protéines suggérées</span><span class="cv">${Math.round(p.poids * 1.6)}–${Math.round(p.poids * 2)} g/j</span></div>
-    `;
+    <div class="calc-row"><span>BMR</span><span class="cv">${bmr} kcal</span></div>
+    <div class="calc-row"><span>TDEE sédentaire</span><span class="cv">${tdee} kcal</span></div>
+    <div class="calc-row"><span>Objectif calorique</span><span class="cv">${deficit} kcal</span></div>
+    <div class="calc-row"><span>Protéines</span><span class="cv">${protAuto} g/j</span></div>
+    <div class="calc-row"><span>Glucides</span><span class="cv">${carbAuto} g/j</span></div>
+    <div class="calc-row"><span>Lipides</span><span class="cv">${fatAuto} g/j</span></div>
+  `;
+    updateNutrition();
   }
   const msg = document.getElementById("profil-msg");
   msg.textContent = "Profil enregistré !";
@@ -504,3 +612,5 @@ renderWeekStrip();
 renderProgram();
 renderSessionHistory();
 loadProfilInputs();
+updateWater();
+renderFavorites();

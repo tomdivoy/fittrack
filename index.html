@@ -52,20 +52,38 @@
                 0<span class="unit">g</span>
               </div>
               <div class="macro-goal" id="prot-goal">/ — g</div>
+              <canvas
+                id="prot-ring"
+                width="80"
+                height="80"
+                class="mini-ring"
+              ></canvas>
             </div>
             <div class="macro-card">
               <div class="macro-label">Glucides</div>
               <div class="macro-value" id="carb-val">
                 0<span class="unit">g</span>
               </div>
-              <div class="macro-goal">suivi</div>
+              <div class="macro-goal" id="carb-goal">/ — g</div>
+              <canvas
+                id="carb-ring"
+                width="80"
+                height="80"
+                class="mini-ring"
+              ></canvas>
             </div>
             <div class="macro-card">
               <div class="macro-label">Lipides</div>
               <div class="macro-value" id="fat-val">
                 0<span class="unit">g</span>
               </div>
-              <div class="macro-goal">suivi</div>
+              <div class="macro-goal" id="fat-goal">/ — g</div>
+              <canvas
+                id="fat-ring"
+                width="80"
+                height="80"
+                class="mini-ring"
+              ></canvas>
             </div>
           </div>
 
@@ -110,6 +128,51 @@
             <div class="block-title">Repas du jour</div>
             <div id="food-list" class="food-list">
               <p class="empty">Aucun aliment pour le moment.</p>
+            </div>
+          </div>
+          <div class="section-block">
+            <div class="block-title">Repas favoris</div>
+            <div id="favorites-list" class="food-list">
+              <p class="empty">Aucun favori enregistré.</p>
+            </div>
+            <button class="btn-save-meal" onclick="saveFavorite()">
+              + Sauvegarder le repas du jour
+            </button>
+            <input
+              type="text"
+              id="fav-name"
+              placeholder="Nom du repas (ex: Mon petit-déj)"
+              class="input-full"
+              style="margin-top: 8px"
+            />
+          </div>
+          <div class="section-block">
+            <div class="block-title">Hydratation</div>
+            <div class="water-tracker">
+              <div class="water-info">
+                <span class="water-val" id="water-val">0</span>
+                <span class="water-goal" id="water-goal">/ 2.0 L</span>
+              </div>
+              <div class="water-bar-wrap">
+                <div class="water-bar-fill" id="water-bar"></div>
+              </div>
+              <div class="water-btns">
+                <button class="btn-water" onclick="addWater(150)">
+                  +150 ml
+                </button>
+                <button class="btn-water" onclick="addWater(250)">
+                  +250 ml
+                </button>
+                <button class="btn-water" onclick="addWater(500)">
+                  +500 ml
+                </button>
+                <button
+                  class="btn-water btn-water-reset"
+                  onclick="resetWater()"
+                >
+                  ↺
+                </button>
+              </div>
             </div>
           </div>
         </section>

@@ -2,7 +2,7 @@
   "name": "FitTrack",
   "short_name": "FitTrack",
   "description": "Suivi nutrition et entraînement",
-  "start_url": "/fittrack/",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#0f1117",
   "theme_color": "#0f1117",
