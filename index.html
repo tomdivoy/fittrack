@@ -30,6 +30,7 @@
         <button class="nav-btn" data-tab="workout">Entraînement</button>
         <button class="nav-btn" data-tab="historique">Historique</button>
         <button class="nav-btn" data-tab="profil">Profil</button>
+        <button class="nav-btn" data-tab="resume">Résumé</button>
       </nav>
 
       <main class="main">
@@ -197,7 +198,7 @@
           </div>
 
           <div class="section-block">
-            <div class="block-title">Programme — poids du corps</div>
+            <div class="block-title">Programme | Poids du corps</div>
             <div class="program-tabs">
               <button class="ptab active" onclick="showProgram('A', this)">
                 Séance A
@@ -210,6 +211,23 @@
               </button>
             </div>
             <div id="program-list"></div>
+            <div class="add-ex-form">
+              <input
+                type="text"
+                id="ex-name"
+                placeholder="Nom de l'exercice"
+                class="input-full"
+              />
+              <input
+                type="text"
+                id="ex-detail"
+                placeholder="Séries × reps (ex: 3 × 12)"
+                class="input-full"
+              />
+              <button class="btn-add" onclick="addExercise()">
+                + Ajouter un exercice
+              </button>
+            </div>
           </div>
         </section>
 
@@ -237,6 +255,26 @@
             <div id="session-history" class="food-list">
               <p class="empty">Aucune séance enregistrée.</p>
             </div>
+          </div>
+        </section>
+
+        <!-- RÉSUMÉ -->
+        <section id="tab-resume" class="tab">
+          <div class="section-block">
+            <div class="block-title">Semaine en cours</div>
+            <div id="resume-semaine"></div>
+          </div>
+          <div class="section-block">
+            <div class="block-title">Nutrition — moyenne</div>
+            <div id="resume-nutrition"></div>
+          </div>
+          <div class="section-block">
+            <div class="block-title">Entraînement</div>
+            <div id="resume-workout"></div>
+          </div>
+          <div class="section-block">
+            <div class="block-title">Poids</div>
+            <div id="resume-poids"></div>
           </div>
         </section>
 
@@ -277,28 +315,27 @@
             <button class="btn-add" onclick="saveProfil()">Enregistrer</button>
             <p id="profil-msg" class="session-msg"></p>
           </div>
-
+          <div class="section-block">
+            <div class="block-title">Objectif août</div>
+            <div class="profil-form">
+              <label
+                >Poids objectif (kg)
+                <input
+                  type="number"
+                  id="p-goal"
+                  placeholder="76"
+                  step="0.1"
+                  onchange="saveGoalWeight()"
+                />
+              </label>
+            </div>
+            <div id="goal-preview" style="margin-top: 12px"></div>
+          </div>
           <div class="section-block" id="calc-block" style="display: none">
             <div class="block-title">Calcul automatique</div>
             <div id="calc-content" class="calc-grid"></div>
           </div>
-          <div class="section-block">
-            <div class="block-title">Notifications</div>
-            <div class="profil-form">
-              <label
-                >Rappel poids (heure)
-                <input type="time" id="notif-poids" value="07:30" />
-              </label>
-              <label
-                >Rappel séance (heure)
-                <input type="time" id="notif-seance" value="18:00" />
-              </label>
-            </div>
-            <button class="btn-add" onclick="enableNotifs()">
-              Activer les notifications
-            </button>
-            <p id="notif-msg" class="session-msg"></p>
-          </div>
+
           <div class="section-block danger-zone">
             <div class="block-title">Zone danger</div>
             <button class="btn-danger" onclick="resetDay()">

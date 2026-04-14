@@ -1,4 +1,4 @@
-const EXERCISES = {
+const DEFAULT_EXERCISES = {
   A: [
     { name: "Pompes", detail: "3 × 10-12 reps" },
     { name: "Pike push-ups", detail: "3 × 8-10 reps" },
@@ -21,6 +21,14 @@ const EXERCISES = {
     { name: "Pompes + squat enchaînés", detail: "3 × 10 cycles" },
   ],
 };
+
+function getExercises() {
+  return load("exercises", DEFAULT_EXERCISES);
+}
+
+function saveExercises(ex) {
+  save("exercises", ex);
+}
 
 function getToday() {
   return new Date().toISOString().split("T")[0];
@@ -57,6 +65,7 @@ document.querySelectorAll(".nav-btn").forEach((btn) => {
     btn.classList.add("active");
     document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
     if (btn.dataset.tab === "historique") renderWeightChart();
+    if (btn.dataset.tab === "resume") renderResume();
   });
 });
 
@@ -357,13 +366,21 @@ function renderWeekStrip() {
 }
 
 window.logSession = function (type) {
-  state.sessions[getToday()] = type;
+  const today = getToday();
+  if (state.sessions[today]) {
+    if (!confirm("Annuler la séance enregistrée aujourd'hui ?")) return;
+    delete state.sessions[today];
+  } else {
+    state.sessions[today] = type;
+  }
   save("sessions", state.sessions);
   renderWeekStrip();
   renderHeader();
   renderSessionHistory();
   const msg = document.getElementById("session-msg");
-  msg.textContent = `Séance ${type} enregistrée !`;
+  msg.textContent = state.sessions[today]
+    ? `Séance ${type} enregistrée !`
+    : "Séance annulée.";
   setTimeout(() => (msg.textContent = ""), 3000);
 };
 
@@ -378,24 +395,60 @@ window.showProgram = function (type, btn) {
 };
 
 function renderProgram() {
+  const exercises = getExercises();
+  const list = exercises[currentProgram] || [];
   const checks = state.checks[currentProgram] || {};
-  document.getElementById("program-list").innerHTML = EXERCISES[currentProgram]
-    .map(
-      (e, i) => `
+  document.getElementById("program-list").innerHTML = list.length
+    ? list
+        .map(
+          (e, i) => `
     <div class="ex-item">
       <div>
         <div class="ex-name">${e.name}</div>
         <div class="ex-detail">${e.detail}</div>
       </div>
-      <button class="ex-check ${checks[i] ? "done" : ""}" onclick="toggleCheck('${currentProgram}', ${i})">${checks[i] ? "✓" : ""}</button>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <button class="ex-check ${checks[i] ? "done" : ""}" onclick="toggleCheck('${currentProgram}', ${i})">${checks[i] ? "✓" : ""}</button>
+        <button class="btn-ex-del" onclick="deleteExercise('${currentProgram}', ${i})">×</button>
+      </div>
     </div>
   `,
-    )
-    .join("");
+        )
+        .join("")
+    : '<p class="empty">Aucun exercice. Ajoutes-en un ci-dessous !</p>';
 }
 
 window.toggleCheck = function (s, i) {
   state.checks[s][i] = !state.checks[s][i];
+  save("checks_" + getToday(), state.checks);
+  renderProgram();
+};
+
+window.addExercise = function () {
+  const name = document.getElementById("ex-name").value.trim();
+  const detail = document.getElementById("ex-detail").value.trim();
+  if (!name) return;
+  const exercises = getExercises();
+  exercises[currentProgram].push({ name, detail: detail || "3 × 10 reps" });
+  saveExercises(exercises);
+  document.getElementById("ex-name").value = "";
+  document.getElementById("ex-detail").value = "";
+  renderProgram();
+};
+
+window.deleteExercise = function (s, i) {
+  if (!confirm("Supprimer cet exercice ?")) return;
+  const exercises = getExercises();
+  exercises[s].splice(i, 1);
+  saveExercises(exercises);
+  const checks = state.checks[s] || {};
+  const newChecks = {};
+  Object.keys(checks).forEach((k) => {
+    const ki = parseInt(k);
+    if (ki < i) newChecks[ki] = checks[ki];
+    else if (ki > i) newChecks[ki - 1] = checks[ki];
+  });
+  state.checks[s] = newChecks;
   save("checks_" + getToday(), state.checks);
   renderProgram();
 };
@@ -569,6 +622,7 @@ window.saveProfil = function () {
   msg.textContent = "Profil enregistré !";
   setTimeout(() => (msg.textContent = ""), 2500);
   loadProfilInputs();
+  renderGoal();
 };
 
 function loadProfilInputs() {
@@ -578,62 +632,182 @@ function loadProfilInputs() {
   if (p.age) document.getElementById("p-age").value = p.age;
   if (p.cal) document.getElementById("p-cal").value = p.cal;
   if (p.prot) document.getElementById("p-prot").value = p.prot;
-  const np = load("notif-poids", "07:30");
-  const ns = load("notif-seance", "18:00");
-  document.getElementById("notif-poids").value = np;
-  document.getElementById("notif-seance").value = ns;
+  const gw = load("goal-weight", 0);
+  if (gw) document.getElementById("p-goal").value = gw;
 }
 
-// NOTIFICATIONS
-window.enableNotifs = function () {
-  const msg = document.getElementById("notif-msg");
-  if (!("Notification" in window)) {
-    msg.textContent = "Notifications non supportées sur ce navigateur.";
+// OBJECTIF
+function renderGoal() {
+  const el = document.getElementById("goal-preview");
+  if (!el) return;
+  const p = state.profil;
+  const goalWeight = load("goal-weight", 0);
+  const weights = state.weights;
+  if (!goalWeight || !p.poids) {
+    el.innerHTML =
+      '<p class="empty">Entre ton poids actuel et ton objectif pour voir ta progression.</p>';
     return;
   }
-  Notification.requestPermission().then((permission) => {
-    if (permission === "granted") {
-      const poids = document.getElementById("notif-poids").value;
-      const seance = document.getElementById("notif-seance").value;
-      save("notif-poids", poids);
-      save("notif-seance", seance);
-      msg.textContent = "Notifications activées !";
-      scheduleNotifs();
-      setTimeout(() => (msg.textContent = ""), 3000);
-    } else {
-      msg.textContent = "Permission refusée.";
-    }
-  });
-};
-
-function scheduleNotifs() {
-  const poidsTime = load("notif-poids", "07:30");
-  const seanceTime = load("notif-seance", "18:00");
-  scheduleDaily(
-    poidsTime,
-    "FitTrack — Poids",
-    "N'oublie pas d'enregistrer ton poids ce matin !",
+  const startWeight = weights.length > 0 ? weights[0].val : p.poids;
+  const currentWeight =
+    weights.length > 0 ? weights[weights.length - 1].val : p.poids;
+  const totalToLose = startWeight - goalWeight;
+  const lost = startWeight - currentWeight;
+  const pct =
+    totalToLose > 0 ? Math.min(Math.round((lost / totalToLose) * 100), 100) : 0;
+  const now = new Date();
+  const target = new Date("2026-08-01");
+  const daysLeft = Math.max(
+    0,
+    Math.round((target - now) / (1000 * 60 * 60 * 24)),
   );
-  scheduleDaily(
-    seanceTime,
-    "FitTrack — Séance",
-    "C'est l'heure de t'entraîner 💪",
-  );
+  const remaining = Math.max(0, (currentWeight - goalWeight).toFixed(1));
+  el.innerHTML = `
+    <div class="goal-bar-wrap">
+      <div class="goal-bar-fill" style="width:${pct}%"></div>
+    </div>
+    <div class="goal-stats">
+      <div class="goal-stat">
+        <div class="goal-stat-val">${pct}%</div>
+        <div class="goal-stat-label">Accompli</div>
+      </div>
+      <div class="goal-stat">
+        <div class="goal-stat-val">${remaining}kg</div>
+        <div class="goal-stat-label">Restants</div>
+      </div>
+      <div class="goal-stat">
+        <div class="goal-stat-val">${daysLeft}j</div>
+        <div class="goal-stat-label">Avant août</div>
+      </div>
+    </div>
+  `;
 }
 
-function scheduleDaily(timeStr, title, body) {
-  const [h, m] = timeStr.split(":").map(Number);
-  const now = new Date();
-  const target = new Date();
-  target.setHours(h, m, 0, 0);
-  if (target <= now) target.setDate(target.getDate() + 1);
-  const delay = target - now;
-  setTimeout(() => {
-    if (Notification.permission === "granted") {
-      new Notification(title, { body, icon: "/icons/icon-192.png" });
+window.saveGoalWeight = function () {
+  const val = parseFloat(document.getElementById("p-goal").value) || 0;
+  if (!val) return;
+  save("goal-weight", val);
+  renderGoal();
+};
+
+// RÉSUMÉ
+function renderResume() {
+  const today = new Date();
+  const todayIdx = today.getDay() === 0 ? 6 : today.getDay() - 1;
+  const days = [
+    "Lundi",
+    "Mardi",
+    "Mercredi",
+    "Jeudi",
+    "Vendredi",
+    "Samedi",
+    "Dimanche",
+  ];
+  const weekDates = days.map((d, i) => {
+    const date = new Date(today);
+    date.setDate(today.getDate() - todayIdx + i);
+    return { label: d, key: date.toISOString().split("T")[0] };
+  });
+
+  // Nutrition moyenne
+  let totalCal = 0,
+    totalProt = 0,
+    totalCarb = 0,
+    totalFat = 0,
+    daysWithData = 0;
+  weekDates.forEach(({ key }) => {
+    const foods = load("foods_" + key, []);
+    if (foods.length) {
+      totalCal += foods.reduce((s, f) => s + (f.cal || 0), 0);
+      totalProt += foods.reduce((s, f) => s + (f.prot || 0), 0);
+      totalCarb += foods.reduce((s, f) => s + (f.carb || 0), 0);
+      totalFat += foods.reduce((s, f) => s + (f.fat || 0), 0);
+      daysWithData++;
     }
-    scheduleDaily(timeStr, title, body);
-  }, delay);
+  });
+  const avgCal = daysWithData ? Math.round(totalCal / daysWithData) : 0;
+  const avgProt = daysWithData ? Math.round(totalProt / daysWithData) : 0;
+  const avgCarb = daysWithData ? Math.round(totalCarb / daysWithData) : 0;
+  const avgFat = daysWithData ? Math.round(totalFat / daysWithData) : 0;
+  const goalCal = state.profil.cal || 0;
+
+  document.getElementById("resume-nutrition").innerHTML = `
+    <div class="resume-grid">
+      <div class="resume-stat">
+        <div class="resume-stat-val">${avgCal}</div>
+        <div class="resume-stat-label">kcal / jour</div>
+      </div>
+      <div class="resume-stat">
+        <div class="resume-stat-val">${goalCal ? Math.round((avgCal / goalCal) * 100) + "%" : "—"}</div>
+        <div class="resume-stat-label">de l'objectif</div>
+      </div>
+      <div class="resume-stat">
+        <div class="resume-stat-val">${avgProt}g</div>
+        <div class="resume-stat-label">protéines moy.</div>
+      </div>
+      <div class="resume-stat">
+        <div class="resume-stat-val">${daysWithData}j</div>
+        <div class="resume-stat-label">jours trackés</div>
+      </div>
+    </div>
+  `;
+
+  // Séances
+  const sessionCount = weekDates.filter(
+    ({ key }) => state.sessions[key],
+  ).length;
+  document.getElementById("resume-semaine").innerHTML = weekDates
+    .map(({ label, key }) => {
+      const session = state.sessions[key];
+      const foods = load("foods_" + key, []);
+      const cal = foods.reduce((s, f) => s + (f.cal || 0), 0);
+      return `<div class="resume-day">
+      <span class="resume-day-name">${label}</span>
+      <div style="display:flex;gap:6px;align-items:center;">
+        ${cal ? `<span class="resume-day-val">${cal} kcal</span>` : ""}
+        ${session ? `<span class="badge-done">Séance ${session}</span>` : `<span class="badge-rest">Repos</span>`}
+      </div>
+    </div>`;
+    })
+    .join("");
+
+  document.getElementById("resume-workout").innerHTML = `
+    <div class="resume-grid">
+      <div class="resume-stat">
+        <div class="resume-stat-val">${sessionCount}</div>
+        <div class="resume-stat-label">séances cette semaine</div>
+      </div>
+      <div class="resume-stat">
+        <div class="resume-stat-val">${Object.keys(state.sessions).length}</div>
+        <div class="resume-stat-label">séances au total</div>
+      </div>
+    </div>
+  `;
+
+  // Poids
+  const weights = state.weights;
+  if (weights.length >= 2) {
+    const first = weights[0].val;
+    const last = weights[weights.length - 1].val;
+    const diff = (last - first).toFixed(1);
+    const arrow = diff < 0 ? "down" : "up";
+    const sign = diff < 0 ? "" : "+";
+    document.getElementById("resume-poids").innerHTML = `
+      <div class="resume-grid">
+        <div class="resume-stat">
+          <div class="resume-stat-val">${last} kg</div>
+          <div class="resume-stat-label">poids actuel</div>
+        </div>
+        <div class="resume-stat">
+          <div class="resume-stat-val ${arrow}">${sign}${diff} kg</div>
+          <div class="resume-stat-label">depuis le début</div>
+        </div>
+      </div>
+    `;
+  } else {
+    document.getElementById("resume-poids").innerHTML =
+      '<p class="empty">Enregistre au moins 2 pesées pour voir l\'évolution.</p>';
+  }
 }
 
 // RESET
@@ -661,7 +835,6 @@ if ("serviceWorker" in navigator) {
 }
 
 // INIT
-if (Notification.permission === "granted") scheduleNotifs();
 renderHeader();
 updateNutrition();
 renderFoods();
@@ -671,3 +844,4 @@ renderSessionHistory();
 loadProfilInputs();
 updateWater();
 renderFavorites();
+renderGoal();

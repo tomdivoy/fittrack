@@ -70,7 +70,7 @@ body {
 
 .nav {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 6px;
   padding: 1rem 1.2rem 0.5rem;
 }
@@ -78,13 +78,13 @@ body {
   display: none;
 }
 .nav-btn {
-  padding: 7px 4px;
+  padding: 7px 2px;
   border-radius: 20px;
   border: 1px solid var(--border);
   background: transparent;
   color: var(--muted);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 11px;
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
@@ -745,4 +745,126 @@ body {
 }
 .btn-fav-del:hover {
   color: var(--danger);
+}
+.goal-bar-wrap {
+  height: 10px;
+  background: var(--bg3);
+  border-radius: 5px;
+  overflow: hidden;
+  margin: 10px 0;
+}
+.goal-bar-fill {
+  height: 100%;
+  border-radius: 5px;
+  background: var(--accent);
+  transition: width 0.5s;
+}
+.goal-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+.goal-stat {
+  background: var(--bg3);
+  border-radius: var(--radius-sm);
+  padding: 8px;
+  text-align: center;
+}
+.goal-stat-val {
+  font-family: var(--font-head);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+.goal-stat-label {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.add-ex-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.btn-ex-del {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0 4px;
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+.btn-ex-del:hover {
+  color: var(--danger);
+}
+.resume-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+.resume-stat {
+  background: var(--bg3);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  text-align: center;
+}
+.resume-stat-val {
+  font-family: var(--font-head);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+.resume-stat-label {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.resume-day {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.resume-day:last-child {
+  border-bottom: none;
+}
+.resume-day-name {
+  color: var(--text);
+}
+.resume-day-val {
+  color: var(--muted);
+  font-size: 12px;
+}
+.badge-done {
+  background: rgba(184, 255, 79, 0.15);
+  color: var(--accent);
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+}
+.badge-rest {
+  background: var(--bg3);
+  color: var(--muted);
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+}
+.resume-arrow {
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 500;
+}
+.resume-arrow.down {
+  color: #4fffb0;
+}
+.resume-arrow.up {
+  color: #ff4f4f;
 }
