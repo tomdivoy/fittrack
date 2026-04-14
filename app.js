@@ -578,6 +578,62 @@ function loadProfilInputs() {
   if (p.age) document.getElementById("p-age").value = p.age;
   if (p.cal) document.getElementById("p-cal").value = p.cal;
   if (p.prot) document.getElementById("p-prot").value = p.prot;
+  const np = load("notif-poids", "07:30");
+  const ns = load("notif-seance", "18:00");
+  document.getElementById("notif-poids").value = np;
+  document.getElementById("notif-seance").value = ns;
+}
+
+// NOTIFICATIONS
+window.enableNotifs = function () {
+  const msg = document.getElementById("notif-msg");
+  if (!("Notification" in window)) {
+    msg.textContent = "Notifications non supportées sur ce navigateur.";
+    return;
+  }
+  Notification.requestPermission().then((permission) => {
+    if (permission === "granted") {
+      const poids = document.getElementById("notif-poids").value;
+      const seance = document.getElementById("notif-seance").value;
+      save("notif-poids", poids);
+      save("notif-seance", seance);
+      msg.textContent = "Notifications activées !";
+      scheduleNotifs();
+      setTimeout(() => (msg.textContent = ""), 3000);
+    } else {
+      msg.textContent = "Permission refusée.";
+    }
+  });
+};
+
+function scheduleNotifs() {
+  const poidsTime = load("notif-poids", "07:30");
+  const seanceTime = load("notif-seance", "18:00");
+  scheduleDaily(
+    poidsTime,
+    "FitTrack — Poids",
+    "N'oublie pas d'enregistrer ton poids ce matin !",
+  );
+  scheduleDaily(
+    seanceTime,
+    "FitTrack — Séance",
+    "C'est l'heure de t'entraîner 💪",
+  );
+}
+
+function scheduleDaily(timeStr, title, body) {
+  const [h, m] = timeStr.split(":").map(Number);
+  const now = new Date();
+  const target = new Date();
+  target.setHours(h, m, 0, 0);
+  if (target <= now) target.setDate(target.getDate() + 1);
+  const delay = target - now;
+  setTimeout(() => {
+    if (Notification.permission === "granted") {
+      new Notification(title, { body, icon: "/icons/icon-192.png" });
+    }
+    scheduleDaily(timeStr, title, body);
+  }, delay);
 }
 
 // RESET
@@ -605,6 +661,7 @@ if ("serviceWorker" in navigator) {
 }
 
 // INIT
+if (Notification.permission === "granted") scheduleNotifs();
 renderHeader();
 updateNutrition();
 renderFoods();

@@ -69,18 +69,16 @@ body {
 }
 
 .nav {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: 6px;
   padding: 1rem 1.2rem 0.5rem;
-  overflow-x: auto;
-  scrollbar-width: none;
 }
 .nav::-webkit-scrollbar {
   display: none;
 }
 .nav-btn {
-  flex-shrink: 0;
-  padding: 7px 14px;
+  padding: 7px 4px;
   border-radius: 20px;
   border: 1px solid var(--border);
   background: transparent;
@@ -90,6 +88,10 @@ body {
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
+  text-align: center;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .nav-btn:hover {
   color: var(--text);
