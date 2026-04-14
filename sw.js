@@ -1,4 +1,4 @@
-const CACHE = "fittrack-v3";
+const CACHE = "fittrack-v4";
 self.addEventListener("install", (e) => {
   self.skipWaiting();
 });
